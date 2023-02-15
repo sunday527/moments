@@ -1,21 +1,19 @@
 import { XIcon } from "@heroicons/react/outline";
-import { createMomentSwapMetadata, storeMediaToIPFS, storeMetadataToIPFS } from "@utils/helpers/nftstorage";
 import { useRouter } from "next/router";
 import React, { useState } from "react";
 
+import { Media } from "@utils/definitions/interfaces";
+import { createMomentSwapMetadata, storeMediaToIPFS, storeMetadataToIPFS } from "@utils/helpers";
+import { useMomentSwap } from "src/hooks";
 import { useWalletProvider } from "src/hooks/use-wallet-provider";
 
 export const PublishModal = () => {
   const router = useRouter();
-  const { address, signer, provider } = useWalletProvider();
+  const { address } = useWalletProvider();
+  const { mintMomentSwapNFT } = useMomentSwap();
   const [loading, setLoading] = useState(false);
   const [text, setText] = useState("");
-  const [media, setMedia] = useState<{
-    cid: string;
-    url: string;
-    type: string;
-  } | null>(null);
-
+  const [media, setMedia] = useState<Media | undefined>(undefined);
   const uploadInput = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length == 0 || loading) {
       return;
@@ -23,26 +21,35 @@ export const PublishModal = () => {
     const file = e.target.files && e.target.files[0];
     setLoading(true);
     if (file) {
-      const { mediaCID, mediaType } = await storeMediaToIPFS(file);
-      console.log("mediaType", mediaType);
-
-      setMedia({ url: `https://${mediaCID}.ipfs.dweb.link`, type: mediaType, cid: mediaCID });
+      try {
+        const { mediaCID, mediaType } = await storeMediaToIPFS(file);
+        setMedia({ url: `https://${mediaCID}.ipfs.dweb.link`, type: mediaType, cid: mediaCID });
+      } catch (err) {
+        console.error("Failed to store media.");
+        alert("Failed to store media, please try again.");
+      }
     }
     setLoading(false);
   };
 
-  const publishHandle = async () => {
+  const publishHandler = async () => {
     if (!address) return;
-    const metadata = createMomentSwapMetadata(address, text, media?.cid || "");
-    const res = await storeMetadataToIPFS(metadata);
-    console.log(">>>res:", res);
+    const metadata = createMomentSwapMetadata(address, text, media);
 
-    setText("");
-    setMedia(null);
+    try {
+      const metadataIPFS = await storeMetadataToIPFS(metadata);
+      await mintMomentSwapNFT(address, metadataIPFS || "");
+      alert("Successfully published moment!");
+      router.reload();
+    } catch (err) {
+      console.error("Failed to publish moment, error:", err);
+      alert("Failed to publish moment.");
+    }
   };
 
   const cleanFileInput = () => {
-    setMedia(null);
+    // TODO: Reset "file-input" selected file.
+    setMedia(undefined);
   };
 
   return (
@@ -113,7 +120,7 @@ export const PublishModal = () => {
             <label
               htmlFor="publish-modal"
               className={`btn btn-primary ${loading && "pointer-events-none saturate-0"}`}
-              onClick={publishHandle}
+              onClick={publishHandler}
             >
               Publish
             </label>

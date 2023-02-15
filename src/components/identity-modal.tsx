@@ -14,7 +14,8 @@ export const IdentityModal = () => {
     setText(localStorage.getItem("username") || undefined);
     setUserImg(localStorage.getItem("user-img") || undefined);
     document.getElementById("file-input")?.addEventListener("input", () => {
-      setUserImg("https://img2.baidu.com/it/u=3350495368,4002328331&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=500");
+      //TODO: Upload avatar
+      setUserImg("");
     });
   }, []);
 

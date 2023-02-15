@@ -31,16 +31,17 @@ export default function UserPage() {
           </div>
           {/* Head  */}
           <div className="w-full h-[160px] bg-gradient-to-r from-secondary to-neutral mb-16">
-            <Avatar
-              seed={address}
-              image={userImg}
-              diameter={100}
-              className="rounded-full border-8 border-white relative top-28 left-8"
-            />
+            <div></div>
+            <Avatar seed={address} image={userImg} diameter={100} className="rounded-full relative top-28 left-8" />
           </div>
           {/* Body */}
 
-          <label htmlFor="identity-modal" className="btn btn-primary btn-sm btn-outline gap-2 float-right mr-6">
+          <label
+            htmlFor="identity-modal"
+            className={`btn btn-primary btn-sm btn-outline gap-2 float-right mr-6 ${
+              address !== pageAddress && "hidden"
+            }`}
+          >
             <svg
               xmlns="http://www.w3.org/2000/svg"
               fill="none"

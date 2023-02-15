@@ -1,5 +1,7 @@
 import { NFTStorage } from "nft.storage";
 
+import { Media } from "@utils/definitions/interfaces";
+
 const key = process.env.NEXT_PUBLIC_NFT_STORAGE_API_KEY;
 const NFTStorageClient = new NFTStorage({
   token: key || "undefined",
@@ -24,7 +26,7 @@ export const storeMediaToIPFS = async (mediaFile: File) => {
 };
 
 // Create NFT Metadata
-export const createMomentSwapMetadata = (owner: string, contentText: string, mediaCID: string) => {
+export const createMomentSwapMetadata = (owner: string, contentText: string, media?: Media) => {
   return {
     name: "MomentSwap Hyperspace NFTs 2023",
     description: contentText,
@@ -35,7 +37,8 @@ export const createMomentSwapMetadata = (owner: string, contentText: string, med
         "text/markdown": contentText,
       },
       media: {
-        ipfs: `ipfs://${mediaCID}`,
+        cid: media?.cid,
+        type: media?.type,
       },
     },
   };
@@ -43,11 +46,8 @@ export const createMomentSwapMetadata = (owner: string, contentText: string, med
 
 // Store NFT Metadata to NFT.Storage
 export const storeMetadataToIPFS = async (metadata: any) => {
-  try {
-    console.info("Storing Metadata to IPFS...");
-    const token = await NFTStorageClient.store(metadata);
-    console.info("Success! Metadata IPFS URL:", token.url);
-  } catch (err) {
-    console.error("Failed to store metadata to IPFS:", err);
-  }
+  console.info("Storing Metadata to IPFS...");
+  const token = await NFTStorageClient.store(metadata);
+  console.info("Success! Metadata IPFS URL:", token.url);
+  return token.url;
 };

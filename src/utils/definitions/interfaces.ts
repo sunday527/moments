@@ -1,3 +1,7 @@
+import { BigNumber } from "ethers";
+
+export type MomentSwapFRC721NFT = [string, string, BigNumber, BigNumber];
+
 export interface CommentData {
   id?: string;
   username?: string;
@@ -10,10 +14,17 @@ export interface CommentData {
 export interface MomentMetadata {
   id: string;
   address: string;
-  timestamp: string;
-  text?: string;
+  timestamp: number;
+  metadataURL: string;
+  contentText?: string;
   username?: string;
   userImg?: string;
   media?: string;
   mediaType?: "video" | "image";
+}
+
+export interface Media {
+  cid: string;
+  url: string;
+  type: string;
 }

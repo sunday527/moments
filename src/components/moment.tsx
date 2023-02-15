@@ -1,14 +1,16 @@
-import { ChatIcon, HeartIcon, ShareIcon, TrashIcon } from "@heroicons/react/outline";
+import { ChatIcon, HeartIcon, ShareIcon } from "@heroicons/react/outline";
 import { HeartIcon as HeartIconFilled } from "@heroicons/react/solid";
+import momenttool from "moment";
 import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import RMoment from "react-moment";
 import { useRecoilState } from "recoil";
 
 import { CommentData, MomentMetadata } from "@utils/definitions/interfaces";
-import { momentIdState } from "src/atom/modalAtom";
+import { momentIdState } from "src/atom";
 import { useWalletProvider } from "src/hooks/use-wallet-provider";
 import { getCommentsByMomentId, getLikesByMomentId, storeLikes } from "src/mock/data";
+import { Avatar } from "./avatar";
 
 type Props = {
   moment: MomentMetadata;
@@ -21,6 +23,7 @@ export const Moment = ({ moment }: Props) => {
   const [hasLiked, setHasLiked] = useState(false);
   const [momentId, setMomentId] = useRecoilState(momentIdState);
   const router = useRouter();
+
   useEffect(() => {
     setComments(getCommentsByMomentId(moment.id) || []);
     const localLikes = getLikesByMomentId(moment.id);
@@ -52,10 +55,12 @@ export const Moment = ({ moment }: Props) => {
   return (
     <div className="flex p-3 border-b border-primary">
       {/* user image */}
-      <img
-        className="h-11 w-11 rounded-full mr-4 cursor-pointer"
-        src={moment?.userImg}
-        alt="user-img"
+
+      <Avatar
+        seed={moment.address}
+        image={moment.userImg}
+        diameter={38}
+        className="items-center mr-4 cursor-pointer"
         onClick={() => router.push(`/user/${moment.address}`)}
       />
       {/* right side */}
@@ -67,13 +72,13 @@ export const Moment = ({ moment }: Props) => {
           <div className="flex items-center space-x-1 whitespace-nowrap">
             <h4
               className=" font-bold text-[15px] sm:text-[16px] hover:underline cur"
-              onClick={() => router.push(`/user/${moment.username}`)}
+              onClick={() => router.push(`/user/${moment.address}`)}
             >
-              {moment?.username}.fil
+              {moment?.username || "---"}.fil
             </h4>
             <span className="text-sm sm:text-[15px] text-gray-500">
-              {`${moment?.address.slice(0, 5)}...${moment?.address.slice(-3)}`} -{" "}
-              <RMoment fromNow>{moment?.timestamp}</RMoment>
+              {`${moment.address?.slice(0, 5)}...${moment.address?.slice(-3)}`} -{" "}
+              <RMoment fromNow>{momenttool.unix(moment.timestamp)}</RMoment>
             </span>
           </div>
 
@@ -83,7 +88,7 @@ export const Moment = ({ moment }: Props) => {
         <div onClick={() => router.push(`/moment/${moment.id}`)} className="cursor-pointer">
           {/* moment text */}
 
-          <p className="text-[15px sm:text-[16px] mb-2">{moment?.text}</p>
+          <p className="text-[15px sm:text-[16px] mb-2">{moment?.contentText}</p>
 
           {/* moment media */}
 
@@ -128,12 +133,12 @@ export const Moment = ({ moment }: Props) => {
               <span className={`${hasLiked && "text-red-600"} text-sm select-none`}> {likes.length}</span>
             )}
           </div>
-          {address === moment?.address && (
+          {/* {address === moment?.address && (
             <TrashIcon
               onClick={deleteMoment}
               className="rounded-full h-9 w-9 hoverEffect p-2 hover:text-red-600 hover:bg-red-100"
             />
-          )}
+          )} */}
           <ShareIcon className="rounded-full h-9 w-9 hoverEffect p-2 hover:text-sky-500 hover:bg-sky-100" />
         </div>
       </div>

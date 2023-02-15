@@ -3,18 +3,40 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useEffect, useState } from "react";
 
 import { MomentMetadata } from "@utils/definitions/interfaces";
+import { useMomentSwap } from "src/hooks";
 import { useWalletProvider } from "src/hooks/use-wallet-provider";
-import { mockMoments } from "src/mock/data";
 
 export const Feed = () => {
-  const [posts, setPosts] = useState<Array<MomentMetadata>>(mockMoments);
-  const { address } = useWalletProvider();
-  const [showMine, setShowMine] = useState(false);
+  const [moments, setMoments] = useState<Array<MomentMetadata>>();
+  const { provider } = useWalletProvider();
+  const { getNFTCollection } = useMomentSwap();
+
+  // Get collection from the contract when provider is updated.
   useEffect(() => {
-    if (localStorage.getItem("submit") === "1") {
-      setShowMine(true);
-    }
-  }, []);
+    (async () => {
+      const collection = await getNFTCollection();
+      console.log("collection", collection);
+
+      const cacheMoments = collection?.map<MomentMetadata>((item) => ({
+        address: item[0],
+        id: item[2].toString(),
+        timestamp: item[3].toNumber(),
+        metadataURL: `https://${item[1].split("/")[2]}.ipfs.dweb.link/metadata.json`,
+      }));
+
+      if (cacheMoments) {
+        for (const m of cacheMoments) {
+          const metadata = await fetch(m.metadataURL).then((res) => res.json());
+          m.contentText = metadata.properties.content["text/markdown"];
+          m.media = `https://${metadata.properties.media.cid}.ipfs.dweb.link`;
+          m.mediaType = metadata.properties.media.type;
+        }
+      }
+
+      setMoments(cacheMoments);
+    })();
+  }, [provider]);
+
   return (
     <div className="xl:ml-[370px] border-l border-r border-primary xl:min-w-[576px] sm:ml-[73px] flex-grow max-w-xl">
       <div className="flex py-2 px-3 sticky top-0 z-50 bg-base-200 border-primary">
@@ -24,40 +46,16 @@ export const Feed = () => {
           <ThemeToggle />
         </div>
       </div>
-      {/* <Input /> */}
       <AnimatePresence>
-        <motion.div
-          key={"0"}
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: 1 }}
-        >
-          {showMine && (
-            <Moment
-              key={"0"}
-              moment={{
-                id: "0",
-                address: address || "",
-                userImg: "https://img2.baidu.com/it/u=3350495368,4002328331&fm=253&fmt=auto&app=138&f=JPEG?w=500&h=500",
-                username: "JoJo",
-                timestamp: new Date().toLocaleString(),
-                text: "hello",
-                media: "https://img0.baidu.com/it/u=60996219,4002865036&fm=253&fmt=auto&app=138&f=JPEG?w=780&h=442",
-                mediaType: "image",
-              }}
-            />
-          )}
-        </motion.div>
-        {posts?.map((post) => (
+        {moments?.map((moment) => (
           <motion.div
-            key={post.id}
+            key={moment.id}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 1 }}
           >
-            <Moment key={post.id} moment={post} />
+            <Moment key={moment.id} moment={moment} />
           </motion.div>
         ))}
       </AnimatePresence>

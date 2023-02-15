@@ -5,21 +5,41 @@ import { useEffect, useState } from "react";
 
 import { Comment, Layout, Moment, ThemeToggle } from "@components";
 import { CommentData, MomentMetadata } from "@utils/definitions/interfaces";
-import { getCommentsByMomentId, mockMoments } from "src/mock/data";
+import { useMomentSwap } from "src/hooks";
+import { getCommentsByMomentId } from "src/mock/data";
 
 export default function MomentPage() {
   const router = useRouter();
-  const [post, setMoment] = useState<MomentMetadata | undefined>(undefined);
-  const momentId = router.query.id as string;
+  const { getNFTCollection } = useMomentSwap();
+  const [moment, setMoment] = useState<MomentMetadata | undefined>(undefined);
   const [comments, setComments] = useState<Array<CommentData>>([]);
+  const momentId = router.query.id as string;
 
   useEffect(() => {
     setComments(getCommentsByMomentId(momentId) || []);
   }, [momentId]);
 
   useEffect(() => {
-    const displayMomentId = mockMoments.findIndex((m) => m.id === momentId);
-    setMoment(mockMoments[displayMomentId]);
+    (async () => {
+      const collection = await getNFTCollection();
+
+      if (collection) {
+        const itemId = collection.findIndex((item) => item[2].toString() === momentId);
+        const item = collection[itemId];
+
+        const _moment: MomentMetadata = {
+          address: item[0],
+          id: item[2].toString(),
+          timestamp: item[3].toNumber(),
+          metadataURL: `https://${item[1].split("/")[2]}.ipfs.dweb.link/metadata.json`,
+        };
+        const metadata = await fetch(_moment.metadataURL).then((res) => res.json());
+        _moment.contentText = metadata.properties.content["text/markdown"];
+        _moment.media = `https://${metadata.properties.media.cid}.ipfs.dweb.link`;
+        _moment.mediaType = metadata.properties.media.type;
+        setMoment(_moment);
+      }
+    })();
   }, [momentId]);
 
   return (
@@ -36,7 +56,7 @@ export default function MomentPage() {
               <ThemeToggle />
             </div>
           </div>
-          {post && <Moment moment={post} />}
+          {moment && <Moment moment={moment} />}
           {comments.length > 0 && (
             <AnimatePresence>
               {comments.map((comment) => (

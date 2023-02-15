@@ -57,43 +57,38 @@ export const WalletProviderProvider = ({ children }: { children: ReactNode }) =>
   }, []);
 
   useEffect(() => {
-    const logged = localStorage.getItem("wallet-logged");
-    if (logged) {
-      addAndSwitchFilecoinChain().then(() => {
-        detectEthereumProvider().then((detectedProvider) => {
-          if (detectedProvider) {
-            const provider = new ethers.providers.Web3Provider(
-              // @ts-ignore
-              detectedProvider,
-              "any",
-            );
-            // Force page refresh when network changes.
-            provider.on("network", (_, oldNetwork) => {
-              if (oldNetwork) {
-                window.location.reload();
-              }
-            });
-            const signer = provider.getSigner();
-            setSigner(signer);
-            signer
-              .getAddress()
-              .then((address) => {
-                setAddress(address);
-              })
-              .catch(() => {
-                setProviderError("An error occurred while getting the signer address");
-              });
-            provider.send("eth_requestAccounts", []).then(() => {
-              setProviderError(null);
-              setProvider(provider);
-              provider.getNetwork().then((network) => {
-                setChainId(network.chainId);
-              });
-            });
-          }
+    (async () => {
+      addAndSwitchFilecoinChain();
+      const detectedProvider = (await detectEthereumProvider()) || window.ethereum;
+      const provider = new ethers.providers.Web3Provider(detectedProvider, "any");
+      provider.send("eth_requestAccounts", []).then(() => {
+        setProviderError(null);
+        setProvider(provider);
+        provider.getNetwork().then((network) => {
+          setChainId(network.chainId);
         });
       });
-    }
+      // Force page refresh when network changes.
+      provider.on("network", (_, oldNetwork) => {
+        if (oldNetwork) {
+          window.location.reload();
+        }
+      });
+
+      const logged = localStorage.getItem("wallet-logged");
+      if (logged) {
+        const signer = provider.getSigner();
+        setSigner(signer);
+        signer
+          .getAddress()
+          .then((address) => {
+            setAddress(address);
+          })
+          .catch(() => {
+            setProviderError("An error occurred while getting the signer address");
+          });
+      }
+    })();
   }, [addAndSwitchFilecoinChain]);
 
   const connect = useCallback(() => {
@@ -179,7 +174,7 @@ export const WalletProviderProvider = ({ children }: { children: ReactNode }) =>
   const disconnect = useCallback(() => {
     localStorage.removeItem("wallet-logged");
     setProviderError(null);
-    setProvider(undefined);
+    // setProvider(undefined);
     setChainId(undefined);
     setSigner(undefined);
     setAddress(undefined);

@@ -14,12 +14,18 @@ contract MomentSwapFRC721 is ERC721URIStorage {
     address owner;
     string tokenURI;
     uint256 tokenId;
+    uint256 timestamp;
   }
 
   momentSwapFRC721NFT[] public nftCollection;
   mapping(address => momentSwapFRC721NFT[]) public nftCollectionByOwner;
 
-  event NewMomentSwapFRC721NFTMinted(address indexed sender, uint256 indexed tokenId, string tokenURI);
+  event NewMomentSwapFRC721NFTMinted(
+    address indexed sender,
+    uint256 indexed tokenId,
+    uint256 indexed timestamp,
+    string tokenURI
+  );
 
   constructor() ERC721("MomentSwap NFTs", "BAC") {
     console.log("Hello Fil-ders! Now creating MomentSwap FRC721 NFT contract!");
@@ -28,7 +34,12 @@ contract MomentSwapFRC721 is ERC721URIStorage {
   function mintMomentSwapNFT(address owner, string memory ipfsURI) public returns (uint256) {
     uint256 newItemId = _tokenIds.current();
 
-    momentSwapFRC721NFT memory newNFT = momentSwapFRC721NFT({owner: msg.sender, tokenURI: ipfsURI, tokenId: newItemId});
+    momentSwapFRC721NFT memory newNFT = momentSwapFRC721NFT({
+      owner: msg.sender,
+      tokenURI: ipfsURI,
+      tokenId: newItemId,
+      timestamp: block.timestamp
+    });
 
     _mint(owner, newItemId);
     _setTokenURI(newItemId, ipfsURI);
@@ -38,7 +49,7 @@ contract MomentSwapFRC721 is ERC721URIStorage {
 
     nftCollection.push(newNFT);
 
-    emit NewMomentSwapFRC721NFTMinted(msg.sender, newItemId, ipfsURI);
+    emit NewMomentSwapFRC721NFTMinted(msg.sender, newItemId, block.timestamp, ipfsURI);
 
     return newItemId;
   }
